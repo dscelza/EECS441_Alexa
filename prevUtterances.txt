@@ -1,0 +1,55 @@
+GetStockPrice what is the price of {StockSymbol}
+GetStockPrice what's the price of {StockSymbol} 
+GetStockPrice what is {StockSymbol} trading at
+GetStockPrice what's {StockSymbol} trading at
+GetStockPrice what is the stock price for {StockSymbol}
+GetStockPrice what's the stock price for {StockSymbol}
+GetStockPrice price of {StockSymbol} 
+GetStockPrice the price of {StockSymbol} 
+GetStockPrice trading price of {StockSymbol}
+GetStockPrice get a quote for {StockSymbol}
+GetStockPrice quote for {StockSymbol}
+GetStockPrice tell stock price for {StockSymbol}
+GetStockPrice what is stock price for {StockSymbol}
+GetStockPrice how does {StockSymbol} look today
+GetStockPrice what about {StockSymbol} today
+
+BuyTrade buy {StockSymbol}
+BuyTrade buy shares of {StockSymbol}
+BuyTrade buy stock in {StockSymbol}
+BuyTrade buy stock of {StockSymbol}
+
+SellTrade sell {StockSymbol}
+SellTrade sell shares of {StockSymbol}
+SellTrade sell stock in {StockSymbol}
+SellTrade sell stock of {StockSymbol}
+
+GetStockNews what is the news for {StockSymbol}
+GetStockNews what's the news for {StockSymbol}
+GetStockNews what are the headlines for {StockSymbol}
+GetStockNews is there news for {StockSymbol}
+GetStockNews is there recent news for {StockSymbol}
+GetStockNews flash briefing for {StockSymbol}
+GetStockNews tell me about {StockSymbol}
+GetStockNews update me about {StockSymbol}
+
+GetPortfolioPerformance what is my portfolio balance
+GetPortfolioPerformance what's my portfolio balance
+GetPortfolioPerformance how is my portfolio today
+GetPortfolioPerformance how's my portfolio today
+GetPortfolioPerformance how is my portfolio
+GetPortfolioPerformance how's my portfolio
+GetPortfolioPerformance how is my portfolio
+GetPortfolioPerformance how is my portfolio
+GetPortfolioPerformance how is my portfolio performing
+GetPortfolioPerformance how's my portfolio performing
+GetPortfolioPerformance how is my portfolio performing today
+GetPortfolioPerformance how's my portfolio performing today
+
+GetPortfolioStocks how are my stocks performing
+GetPortfolioStocks how are my stocks doing
+GetPortfolioStocks how are my stocks
+GetPortfolioStocks what is my stock performance
+GetPortfolioStocks what's my stock performance
+GetPortfolioStocks what stocks are in my portfolio
+
