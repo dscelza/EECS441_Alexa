@@ -28,24 +28,19 @@ exports.handler = (event, context) => {
 
         switch(event.request.intent.name) {
           case "GetStockPrice":
-            console.log(event.request.intent.slots.StockSymbol.value)
             var sym = event.request.intent.slots.StockSymbol.value
-            // does not work with voice.. still need to remove spaces and '.'
-            // voice returns a. a. p. l need aapl
-            // does work when configuring your own test cases on Lambda
+            sym = sym.replace(/[^a-zA-Z ]+/g, '')
             var endpoint = "https://download.finance.yahoo.com/d/quotes.csv?s=" + 
-                event.request.intent.slots.StockSymbol.value +"&f=nabo"
-            console.log(endpoint)
+                sym +"&f=nabo"
             var body = ""
             https.get(endpoint, (response) => {
               response.on('data', (chunk) => { body += chunk })
               response.on('end', () => {
                 var resp = body.split(',')
                 var StockName = resp[0]
-                StockName.replace('"',' ')
+                StockName.replace('.','')
                 var StockPrice = resp[1]
                 var x =  StockName + ' is currently trading at ' + StockPrice + '.'
-                console.log(x)
                 context.succeed(
                   generateResponse(
                     buildSpeechletResponse(x, true),
