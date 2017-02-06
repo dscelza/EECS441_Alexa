@@ -1,0 +1,25 @@
+GetStockPrice price of {StockSymbol}
+GetStockPrice the price of {StockSymbol}
+GetStockPrice what is the price of {StockSymbol}
+GetStockPrice what's the price of {StockSymbol}
+GetStockPrice what is the stock price of {StockSymbol}
+GetStockPrice what's the stock price of {StockSymbol}
+GetStockPrice what is the trading price of {StockSymbol}
+GetStockPrice what's the trading price of {StockSymbol}
+GetStockPrice what is the current price of {StockSymbol}
+GetStockPrice what's the current price of {StockSymbol}
+GetStockPrice what is {StockSymbol} trading at
+GetStockPrice what's {StockSymbol} trading at
+GetStockPrice what is {StockSymbol} currently trading at
+GetStockPrice what's {StockSymbol} currently trading at
+GetStockPrice get a quote for {StockSymbol}
+GetStockPrice get a quote for the symbol {StockSymbol}
+GetStockPrice get a stock quote for {StockSymbol}
+GetStockPrice get a stock quote for the symbol {StockSymbol}
+
+GetPortfolioPerformance how did my portfolio do today?
+GetPortfolioPerformance how is my portfolio?
+GetPortfolioPerformance how's my portfolio?
+GetPortfolioPerformance how are my stocks?
+GetPortfolioPerformance how are my stocks today?
+GetPortfolioPerformance how are my stocks doing?
