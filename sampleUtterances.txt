@@ -1,7 +1,1 @@
 GetStockPrice price of {StockSymbol} 
-
-GetSubscriberCount current subscriber count
-
-GetVideoViewCount current video view count
-
-GetVideoViewCountSinceDate current video view count {SinceDate}
