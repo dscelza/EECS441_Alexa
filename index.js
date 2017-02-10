@@ -1,39 +1,67 @@
 var https = require('https');
+var oauth = require('oauth');
 
+//General stock response helper function
+function stockExchange(data){
+    // Exchange Name
+    var name = data['name'];
+    // Percent change from previous close
+    var percentChange = data['pchg'];
+    // Change type (even, up, down)
+    var changeType = '';
+    console.log(data['pchg_sign']);
+    if (data['pchg_sign'] == 'u')
+        changeType = 'up';
+    if (data['pchg_sign'] == 'd')
+        changeType = 'down';
+    if (data['pchg_sign'] == 'e')
+        changeType = 'unchanged';
+    // Trading price
+    var price = data['last'];
 
-//TRADEKING SAMPLE GET WITH OUR KEYS. https://developers.tradeking.com/documentation/node
-//NEEDS OAUTH package. https://github.com/ciaranj/node-oauth
+    // Alexa speech response
+    return (name + ' is ' +  changeType + ' by ' + percentChange + ' at ' + price);
+}
 
-    // Use the OAuth module
- var oauth = require('oauth');
+//Detailed stock response helper function
+function stockDetailsHelper(data){
+    // Exchange Name
+    var name = data['name'];
+    // 52 Week high
+    var hi52 = data['wk52hi'];
+    // 52 Week low
+    var low52 = data['wk52lo'];
+    //P/E Ratio
+    var peRatio = data['pe'];
 
-//             // Setup key/secret for authentication and API endpoint URL
-// var configuration = {
-//   api_url: "https://api.tradeking.com/v1",
-//   consumer_key: "tuBpknysruKHIOGtFS0eOykYqZkLi3P2qBi61WjuA0A7",
-//   consumer_secret: "rknerQ5ki8yzKxvigA5d99vsxHiahcy58lGCaEhGwKQ4",
-//   access_token: "7LXGWjbYl8LgJuVJalQZPm8pPYiTq5WZFHTUypDZ7v42",
-//   access_secret: "KcCZCbBr4ztfmtEpJRS5ZzVf1H5lnl0cBobvFIu8TEs8"
-// }
+}
 
-// // Setup the OAuth Consumer
-// var tradeking_consumer = new oauth.OAuth(
-//   "https://developers.tradeking.com/oauth/request_token",
-//   "https://developers.tradeking.com/oauth/access_token",
-//   configuration.consumer_key,
-//   configuration.consumer_secret,
-//   "1.0",
-//   null,
-//   "HMAC-SHA1");
+// Setup key/secret for authentication and API endpoint URL
+var configuration = {
+  api_url: "https://api.tradeking.com/v1",
+  consumer_key: "tuBpknysruKHIOGtFS0eOykYqZkLi3P2qBi61WjuA0A7",
+  consumer_secret: "rknerQ5ki8yzKxvigA5d99vsxHiahcy58lGCaEhGwKQ4",
+  access_token: "7LXGWjbYl8LgJuVJalQZPm8pPYiTq5WZFHTUypDZ7v42",
+  access_secret: "KcCZCbBr4ztfmtEpJRS5ZzVf1H5lnl0cBobvFIu8TEs8"
+}
 
-// tradeking_consumer.get(configuration.api_url+'/accounts.json', configuration.access_token, configuration.access_secret,
-//   function(error, data, response) {
-//     // Parse the JSON data
-//     account_data = JSON.parse(data);
-//     // Display the response
-//     console.log(account_data.response);
-//   }
-// );
+// Setup the OAuth Consumer
+var tradeking_consumer = new oauth.OAuth(
+  "https://developers.tradeking.com/oauth/request_token",
+  "https://developers.tradeking.com/oauth/access_token",
+  configuration.consumer_key,
+  configuration.consumer_secret,
+  "1.0",
+  null,
+  "HMAC-SHA1");
+
+var stockExchangeTicker = {
+    NASDAQ: "IXIC",
+    DOW: "DJI",
+    SP500: "GSPC"
+}
+
+var symbol = "";
 
 exports.handler = (event, context) => {
 
@@ -63,36 +91,32 @@ exports.handler = (event, context) => {
 
         switch(event.request.intent.name) {
           case "GetStockPrice":
-            var sym = event.request.intent.slots.StockSymbol.value;
-            sym = sym.replace(/[^a-zA-Z ]+/g, '');
-            var endpoint = "https://download.finance.yahoo.com/d/quotes.csv?s=" + 
-                sym +"&f=nl1p2";
-            var body = "";
-            
-            https.get(endpoint, (response) => {
-              response.on('data', (chunk) => { body += chunk });
-              response.on('end', () => {
-                  //BUG. doesn't split correctly. test FIT.
-                  //http://vikku.info/codetrash/Yahoo_Finance_Stock_Quote_API (API info)
-                var resp = body.split(',');
-                var StockName = resp[0];
-                StockName.replace('.','');
-                var StockPrice = resp[1];
-                console.log("Stock price is: ");
-                console.log(resp);
-                var x =  StockName + ' is currently trading at ' + StockPrice + '.';
-                context.succeed(
-                  generateResponse(
-                    buildSpeechletResponse(x, true),
-                    {}
-                  )
-                );
-              });
-            });
+                symbol = event.request.intent.slots.StockSymbol.value;
+                symbol = symbol.replace(/[^a-zA-Z ]+/g, '');
+
+                tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + symbol, configuration.access_token, configuration.access_secret,
+                    function(error, data, response) {
+                        if (error){
+                            console.log(error);
+                            context.succeed(
+                            generateResponse(
+                                buildSpeechletResponse("My Market was unable to process your request with TradeKing.", true),
+                                    {}
+                            )
+                        );
+                        }
+                        // Parse the JSON data
+                        dataResponse = JSON.parse(data);
+                        dataResponse = dataResponse.response['quotes']['quote'];
+                        console.log(dataResponse);
+                        context.succeed(
+                            generateResponse(
+                                buildSpeechletResponse(stockExchange(dataResponse), true),
+                                    {}
+                            )
+                        );
+                    })
             break;
-
-          
-
           default:
             throw "Invalid intent";
         }
