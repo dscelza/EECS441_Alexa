@@ -116,7 +116,43 @@ exports.handler = (event, context) => {
                             )
                         );
                     })
+
             break;
+
+            case "GetNewsAbout":
+
+            keyword = event.request.intent.slots.NewsWord.value;
+            keyword = keyword.replace(/[^a-zA-Z ]+/g, '');
+            console.log("get update function");
+            console.log(keyword);
+
+            tradeking_consumer.get(configuration.api_url+'/market/news/search.json?symbols=' + keyword, configuration.access_token, configuration.access_secret,
+                    function(error, data, response) {
+                        if (error){
+                            console.log(error);
+                            context.succeed(
+                            generateResponse(
+                                buildSpeechletResponse("My Market was unable to process your request with TradeKing.", true),
+                                    {}
+                            )
+                        );
+                        }
+                        // Parse the JSON data
+                        dataResponse = JSON.parse(data);
+                        dataResponse = dataResponse.response['articles']['article'];
+                        console.log(dataResponse);
+                        context.succeed(
+                            generateResponse(
+                                buildSpeechletResponse(stockExchange(dataResponse), true),
+                                    {}
+                            )
+                        );
+                    })
+
+            break;
+
+
+
           default:
             throw "Invalid intent";
         }
