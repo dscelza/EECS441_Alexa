@@ -23,3 +23,14 @@ GetPortfolioPerformance how's my portfolio?
 GetPortfolioPerformance how are my stocks?
 GetPortfolioPerformance how are my stocks today?
 GetPortfolioPerformance how are my stocks doing?
+
+
+GetStockPrice price of {StockSymbol} 
+
+GetNews get current news
+GetNews get popular news
+GetNews get news
+
+GetNewsAbout get news for the symbol {NewsWord}
+GetNewsAbout get news about {NewsWord}
+GetNewsAbout get news for {NewsWord}

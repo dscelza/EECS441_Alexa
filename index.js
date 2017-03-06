@@ -1,6 +1,9 @@
 var https = require('https');
 var oauth = require('oauth');
 
+
+// 4de8fd1a6b2c47ce8d98fce1185a556e newsapi key
+
 //General stock response helper function
 function stockExchange(data){
     // Exchange Name
@@ -94,7 +97,8 @@ exports.handler = (event, context) => {
                 symbol = event.request.intent.slots.StockSymbol.value;
                 symbol = symbol.replace(/[^a-zA-Z ]+/g, '');
 
-                tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + symbol, configuration.access_token, configuration.access_secret,
+                tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + symbol,
+                configuration.access_token, configuration.access_secret,
                     function(error, data, response) {
                         if (error){
                             console.log(error);
@@ -126,7 +130,8 @@ exports.handler = (event, context) => {
             console.log("get update function");
             console.log(keyword);
 
-            tradeking_consumer.get(configuration.api_url+'/market/news/search.json?symbols=' + keyword, configuration.access_token, configuration.access_secret,
+            tradeking_consumer.get(configuration.api_url+'/market/news/search.json?symbols=' + keyword + '&maxhits=3',
+            configuration.access_token, configuration.access_secret,
                     function(error, data, response) {
                         if (error){
                             console.log(error);
@@ -137,13 +142,15 @@ exports.handler = (event, context) => {
                             )
                         );
                         }
-                        // Parse the JSON data
                         dataResponse = JSON.parse(data);
-                        dataResponse = dataResponse.response['articles']['article'];
-                        console.log(dataResponse);
+                        var resp = ''
+                        for (var i = 0 ; i < 3; i++){
+                          resp = resp + dataResponse.response['articles']['article'][i]['headline'] + '. ';
+                        }
+                        console.log(resp);
                         context.succeed(
                             generateResponse(
-                                buildSpeechletResponse(stockExchange(dataResponse), true),
+                                buildSpeechletResponse(resp, true),
                                     {}
                             )
                         );
@@ -151,6 +158,28 @@ exports.handler = (event, context) => {
 
             break;
 
+
+            case "GetNews":
+              console.log("get news function")
+              var sym = event.request.intent.slots.StockSymbol.value
+              sym = sym.replace(/[^a-zA-Z ]+/g, '')
+              var endpoint = "https://newsapi.org/v1/articles?source=" + 
+                "bloomberg&apiKey=4de8fd1a6b2c47ce8d98fce1185a556e";
+              var body = ""
+              https.get(endpoint, (response) => {
+                response.on('data', (chunk) => { body += chunk })
+                response.on('end', () => {
+                  var resp = ''
+                  var x =  StockName + ' is currently trading at ' + StockPrice + '.'
+                  context.succeed(
+                    generateResponse(
+                      buildSpeechletResponse(x, true),
+                      {}
+                    )
+                  )
+                })
+              })
+              break;
 
 
           default:

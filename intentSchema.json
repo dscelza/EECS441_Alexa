@@ -4,10 +4,23 @@
       "intent": "GetStockPrice",
       "slots":[
         {
-      		"name":"StockSymbol",
-        	"type": "STOCK"
+          "name":"StockSymbol",
+          "type": "STOCK"
         }
       ]
+    },
+    {
+      "intent": "GetNewsAbout",
+      "slots":[
+        {
+          "name":"NewsWord",
+          "type": "MARKETS"
+        }
+      ]
+    },
+    {
+      "intent": "GetNews"
     }
+    
   ]
 }
