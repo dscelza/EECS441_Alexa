@@ -160,26 +160,30 @@ exports.handler = (event, context) => {
 
 
             case "GetNews":
-              console.log("get news function")
-              var sym = event.request.intent.slots.StockSymbol.value
-              sym = sym.replace(/[^a-zA-Z ]+/g, '')
-              var endpoint = "https://newsapi.org/v1/articles?source=" + 
-                "bloomberg&apiKey=4de8fd1a6b2c47ce8d98fce1185a556e";
-              var body = ""
-              https.get(endpoint, (response) => {
-                response.on('data', (chunk) => { body += chunk })
-                response.on('end', () => {
-                  var resp = ''
-                  var x =  StockName + ' is currently trading at ' + StockPrice + '.'
-                  context.succeed(
-                    generateResponse(
-                      buildSpeechletResponse(x, true),
-                      {}
-                    )
+            console.log("get news function")
+            var endpoint = "https://newsapi.org/v1/articles?source=" + 
+              "bloomberg&apiKey=4de8fd1a6b2c47ce8d98fce1185a556e";
+            var body = ""
+            https.get(endpoint, (response) => {
+              response.on('data', (chunk) => { body += chunk })
+              response.on('end', () => {
+                var dataResponse = JSON.parse(body)
+                console.log(dataResponse)
+                var resp = ''
+                for (var i = 0 ; i < 3; i++){
+                    resp = resp + dataResponse.response['articles'][i]['title'] + '. ';
+                    resp = resp + dataResponse.response['articles'][i]['description'] + '<break time="3s"/> ';
+                  }
+
+                context.succeed(
+                  generateResponse(
+                    buildSpeechletResponse(x, true),
+                    {}
                   )
-                })
+                )
               })
-              break;
+            })
+            break;
 
 
           default:

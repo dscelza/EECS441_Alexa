@@ -14,7 +14,7 @@
       "slots":[
         {
           "name":"NewsWord",
-          "type": "MARKETS"
+          "type": "STOCK"
         }
       ]
     },
