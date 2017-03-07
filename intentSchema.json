@@ -14,12 +14,21 @@
       "slots":[
         {
           "name":"NewsWord",
-          "type": "STOCK"
+          "type": "MARKETS"
         }
       ]
     },
     {
       "intent": "GetNews"
+    },
+    {
+      "intent": "GetStockResp",
+      "slots":[
+        {
+          "name":"stockSymbol",
+          "type": "STOCK"
+        }
+      ]
     }
     
   ]

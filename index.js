@@ -172,7 +172,8 @@ exports.handler = (event, context) => {
                 var resp = ''
                 for (var i = 0 ; i < 3; i++){
                     resp = resp + dataResponse['articles'][i]['title'] + '. ';
-                    resp = resp + dataResponse['articles'][i]['description'] + '<break time="3s"/> ';
+                    resp = resp + dataResponse['articles'][i]['description'] + '<break time="2s"/> ';
+                    resp = resp + " Next Article. "
                 }
                 console.log("resp: ");
                 console.log(resp);
