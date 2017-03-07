@@ -167,10 +167,15 @@ exports.handler = (event, context) => {
             https.get(endpoint, (response) => {
               response.on('data', (chunk) => { body += chunk })
               response.on('end', () => {
-                var dataResponse = JSON.parse(body)
-                console.log(dataResponse)
-                var resp = '';
-
+                var dataResponse = JSON.parse(body);
+                //console.log(dataResponse)
+                var resp = ''
+                for (var i = 0 ; i < 3; i++){
+                    resp = resp + dataResponse['articles'][i]['title'] + '. ';
+                    resp = resp + dataResponse['articles'][i]['description'] + '<break time="3s"/> ';
+                }
+                console.log("resp: ");
+                console.log(resp);
                 context.succeed(
                   generateResponse(
                     buildSpeechletResponse(resp, true),
