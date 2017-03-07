@@ -169,15 +169,11 @@ exports.handler = (event, context) => {
               response.on('end', () => {
                 var dataResponse = JSON.parse(body)
                 console.log(dataResponse)
-                var resp = ''
-                for (var i = 0 ; i < 3; i++){
-                    resp = resp + dataResponse.response['articles'][i]['title'] + '. ';
-                    resp = resp + dataResponse.response['articles'][i]['description'] + '<break time="3s"/> ';
-                  }
+                var resp = '';
 
                 context.succeed(
                   generateResponse(
-                    buildSpeechletResponse(x, true),
+                    buildSpeechletResponse(resp, true),
                     {}
                   )
                 )
