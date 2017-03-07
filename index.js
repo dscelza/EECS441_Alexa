@@ -12,18 +12,17 @@ function stockExchange(data){
     var percentChange = data['pchg'];
     // Change type (even, up, down)
     var changeType = '';
-    console.log(data['pchg_sign']);
-    if (data['pchg_sign'] == 'u')
+    if (parseFloat(data['last']) > parseFloat(data['pcls']))
         changeType = 'up';
-    if (data['pchg_sign'] == 'd')
+    else if (parseFloat(data['last']) < parseFloat(data['pcls']))
         changeType = 'down';
-    if (data['pchg_sign'] == 'e')
+    else
         changeType = 'unchanged';
     // Trading price
-    var price = data['last'];
+    var price = parseFloat(data['last']).toFixed(2);
 
     // Alexa speech response
-    return (name + ' is ' +  changeType + ' by ' + percentChange + ' at ' + price);
+    return (name + ' is ' +  changeType + ' by ' + percentChange + ' percent and trading at ' + price + ' dollars.');
 }
 
 //Detailed stock response helper function
