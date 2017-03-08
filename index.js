@@ -25,6 +25,19 @@ function stockExchange(data){
     return (name + ' is ' +  changeType + ' by ' + percentChange + ' percent and trading at ' + price + ' dollars.');
 }
 
+
+// Portfolio specific data
+function portfolioReview(data){
+    // Account market value
+    var marketvalue = data['marketvalue'];
+    // Daily change from previous day
+    var dailychange = data['change'];
+    // Total change for account
+    var totalchange = data['gainloss'];
+    // Alexa speech response
+    return ('Your account balance of ' + marketvalue + ' dollars has changed by ' + dailychange + ' percent today and overall has changed by ' + totalchange + ' percent to date.');
+}
+
 //Detailed stock response helper function
 function stockDetailsHelper(data){
     // Exchange Name
@@ -184,6 +197,36 @@ exports.handler = (event, context) => {
                 )
               })
             })
+            break;
+
+            case "GetPortfolio":
+             var demoAccount = '38937548';
+
+                tradeking_consumer.get(configuration.api_url+'/accounts/' + demoAccount + '/holdings.json',
+                configuration.access_token, configuration.access_secret,
+                    function(error, data, response) {
+                        if (error){
+                            console.log(error);
+                            context.succeed(
+                            generateResponse(
+                                buildSpeechletResponse("My Market was unable to process your request with TradeKing.", true),
+                                    {}
+                            )
+                        );
+                        }
+                        // Parse the JSON data
+                        dataResponse = JSON.parse(data);
+                        dataResponse = dataResponse.response['accountholdings'];
+                        console.log(dataResponse);
+                        // TODO: CHANGE SPEECHLET FUNCTION TO 'portfolioReview(data)'
+                        context.succeed(
+                            generateResponse(
+                                buildSpeechletResponse('stockExchange(dataResponse)', true),
+                                    {}
+                            )
+                        );
+                    })
+
             break;
 
 
