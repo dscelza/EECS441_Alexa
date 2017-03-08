@@ -109,6 +109,12 @@ exports.handler = (event, context) => {
                 symbol = event.request.intent.slots.StockSymbol.value;
                 symbol = symbol.replace(/[^a-zA-Z ]+/g, '');
 
+                // Removes excess characters
+                var spaceIndex = symbol.lastIndexOf(' ');
+                if (spaceIndex != -1){
+                    symbol = symbol.substring(spaceIndex + 1, symbol.length)
+                }
+
                 tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + symbol,
                 configuration.access_token, configuration.access_secret,
                     function(error, data, response) {
