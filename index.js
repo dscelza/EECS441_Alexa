@@ -1,7 +1,6 @@
 var https = require('https');
 var oauth = require('oauth');
 
-
 // 4de8fd1a6b2c47ce8d98fce1185a556e newsapi key
 
 //General stock response helper function
@@ -121,93 +120,75 @@ exports.handler = (event, context) => {
                         if (error){
                             console.log(error);
                             context.succeed(
-                            generateResponse(
-                                buildSpeechletResponse("My Market was unable to process your request with TradeKing.", true),
-                                    {}
-                            )
-                        );
+                            generateResponse(buildSpeechletResponse("My Market was unable to process your request with TradeKing.", true),{})
+                            );
                         }
                         // Parse the JSON data
-                        dataResponse = JSON.parse(data);
-                        dataResponse = dataResponse.response['quotes']['quote'];
-                        console.log(dataResponse);
+                        dataResponse = JSON.parse(data).response['quotes']['quote'];
                         context.succeed(
-                            generateResponse(
-                                buildSpeechletResponse(stockExchange(dataResponse), true),
-                                    {}
-                            )
+                            generateResponse(buildSpeechletResponse(stockExchange(dataResponse), true),{})
                         );
-                    })
-
+                    }
+                )
             break;
 
             case "GetNewsAbout":
+                keyword = event.request.intent.slots.NewsWord.value;
+                keyword = keyword.replace(/[^a-zA-Z ]+/g, '');
+                console.log("get update function");
+                console.log(keyword);
 
-            keyword = event.request.intent.slots.NewsWord.value;
-            keyword = keyword.replace(/[^a-zA-Z ]+/g, '');
-            console.log("get update function");
-            console.log(keyword);
-
-            tradeking_consumer.get(configuration.api_url+'/market/news/search.json?symbols=' + keyword + '&maxhits=3',
-            configuration.access_token, configuration.access_secret,
-                    function(error, data, response) {
-                        if (error){
-                            console.log(error);
+                tradeking_consumer.get(configuration.api_url+'/market/news/search.json?symbols=' + keyword + '&maxhits=3',
+                configuration.access_token, configuration.access_secret,
+                        function(error, data, response) {
+                            if (error){
+                                console.log(error);
+                                context.succeed(
+                                generateResponse(
+                                    buildSpeechletResponse("My Market was unable to process your request with TradeKing.", true),{})
+                                );
+                            }
+                            dataResponse = JSON.parse(data);
+                            var resp = '';
+                            for (var i = 0 ; i < 3; i++){
+                                resp = resp + dataResponse.response['articles']['article'][i]['headline'] + '. ';
+                            }
+                            console.log(resp);
                             context.succeed(
-                            generateResponse(
-                                buildSpeechletResponse("My Market was unable to process your request with TradeKing.", true),
-                                    {}
-                            )
-                        );
-                        }
-                        dataResponse = JSON.parse(data);
-                        var resp = ''
-                        for (var i = 0 ; i < 3; i++){
-                          resp = resp + dataResponse.response['articles']['article'][i]['headline'] + '. ';
-                        }
-                        console.log(resp);
-                        context.succeed(
-                            generateResponse(
-                                buildSpeechletResponse(resp, true),
-                                    {}
-                            )
-                        );
-                    })
-
+                                generateResponse(buildSpeechletResponse(resp, true),{})
+                            );
+                    }
+                )
             break;
 
 
             case "GetNews":
-            console.log("get news function")
-            var endpoint = "https://newsapi.org/v1/articles?source=" + 
-              "bloomberg&apiKey=4de8fd1a6b2c47ce8d98fce1185a556e";
-            var body = ""
-            https.get(endpoint, (response) => {
-              response.on('data', (chunk) => { body += chunk })
-              response.on('end', () => {
-                var dataResponse = JSON.parse(body);
-                //console.log(dataResponse)
-                var resp = ''
-                for (var i = 0 ; i < 3; i++){
-                    resp = resp + dataResponse['articles'][i]['title'] + '. ';
-                    resp = resp + dataResponse['articles'][i]['description'] + '<break time="2s"/> ';
-                    resp = resp + " Next Article. "
-                }
-                console.log("resp: ");
-                console.log(resp);
-                context.succeed(
-                  generateResponse(
-                    buildSpeechletResponse(resp, true),
-                    {}
-                  )
-                )
-              })
-            })
+                console.log("get news function")
+                var endpoint = "https://newsapi.org/v1/articles?source=" + 
+                "bloomberg&apiKey=4de8fd1a6b2c47ce8d98fce1185a556e";
+                var body = ""
+                https.get(endpoint, (response) => {
+                response.on('data', (chunk) => { body += chunk })
+                response.on('end', () => {
+                    var dataResponse = JSON.parse(body);
+                    //console.log(dataResponse)
+                    var resp = '';
+                    for (var i = 0 ; i < 3; i++){
+                        resp = resp + dataResponse['articles'][i]['title'] + '. ';
+                        resp = resp + dataResponse['articles'][i]['description'] + '<break time="2s"/> ';
+                        resp = resp + " Next Article. "
+                    }
+                    console.log("resp: ");
+                    console.log(resp);
+                    context.succeed(
+                        generateResponse(buildSpeechletResponse(resp, true),{})
+                    )
+                })
+                })
             break;
 
             case "GetPortfolio":
-             var demoAccount = '38937548';
-
+                var demoAccount = '38937548';
                 tradeking_consumer.get(configuration.api_url+'/accounts/' + demoAccount + '/holdings.json',
                 configuration.access_token, configuration.access_secret,
                     function(error, data, response) {
@@ -215,50 +196,38 @@ exports.handler = (event, context) => {
                             console.log(error);
                             context.succeed(
                             generateResponse(
-                                buildSpeechletResponse("My Market was unable to process your request with TradeKing.", true),
-                                    {}
+                                buildSpeechletResponse("My Market was unable to process your request with TradeKing.", true),{}
                             )
                         );
                         }
                         // Parse the JSON data
-                        dataResponse = JSON.parse(data);
-                        dataResponse = dataResponse.response['accountholdings'];
+                        dataResponse = JSON.parse(data).response['accountholdings'];
                         console.log(dataResponse);
                         // TODO: CHANGE SPEECHLET FUNCTION TO 'portfolioReview(data)'
                         context.succeed(
                             generateResponse(
-                                buildSpeechletResponse('stockExchange(dataResponse)', true),
-                                    {}
+                                buildSpeechletResponse('stockExchange(dataResponse)', true),{}
                             )
                         );
-                    })
-
+                    }
+                )
             break;
-
-
           default:
             throw "Invalid intent";
         }
-
         break;
-
       case "SessionEndedRequest":
         // Session Ended Request
         console.log(`SESSION ENDED REQUEST`);
         break;
-
       default:
         context.fail(`INVALID REQUEST TYPE: ${event.request.type}`);
-
     }
-
   } catch(error) { context.fail(`Exception: ${error}`) }
-
 };
 
 // Helpers
 buildSpeechletResponse = (outputText, shouldEndSession) => {
-
   return {
     outputSpeech: {
       type: "PlainText",
@@ -266,15 +235,12 @@ buildSpeechletResponse = (outputText, shouldEndSession) => {
     },
     shouldEndSession: shouldEndSession
   };
-
 };
 
 generateResponse = (speechletResponse, sessionAttributes) => {
-
   return {
     version: "1.0",
     sessionAttributes: sessionAttributes,
     response: speechletResponse
   }
-
 }
