@@ -5,34 +5,27 @@ var oauth = require('oauth');
 
 //General stock response helper function
 function stockExchange(data){
-    // Exchange Name
-    var name = data['name'];
-    // Percent change from previous close
-    var percentChange = data['pchg'];
     // Change type (even, up, down)
     var changeType = '';
-    if (parseFloat(data['last']) > parseFloat(data['pcls']))
+    if (parseFloat(data.last) > parseFloat(data.pcls))
         changeType = 'up';
-    else if (parseFloat(data['last']) < parseFloat(data['pcls']))
+    else if (parseFloat(data.last) < parseFloat(data.pcls))
         changeType = 'down';
     else
         changeType = 'unchanged';
-    // Trading price
-    var price = parseFloat(data['last']).toFixed(2);
-
     // Alexa speech response
-    return (name + ' is ' +  changeType + ' by ' + percentChange + ' percent and trading at ' + price + ' dollars.');
+    // [Stock Name] is [up/down/unchanged] by [percentange] percent and trading at [float] dollars;
+    return (data.name + ' is ' +  changeType + ' by ' + data.pchg + ' percent and trading at ' + parseFloat(data.last).toFixed(2) + ' dollars.');
 }
-
 
 // Portfolio specific data
 function portfolioReview(data){
     // Account market value
-    var marketvalue = data['marketvalue'];
+    var marketvalue = data.marketvalue;
     // Daily change from previous day
-    var dailychange = data['change'];
+    var dailychange = data.change;
     // Total change for account
-    var totalchange = data['gainloss'];
+    var totalchange = data.gainloss;
     // Alexa speech response
     return ('Your account balance of ' + marketvalue + ' dollars has changed by ' + dailychange + ' percent today and overall has changed by ' + totalchange + ' percent to date.');
 }
@@ -40,14 +33,13 @@ function portfolioReview(data){
 //Detailed stock response helper function
 function stockDetailsHelper(data){
     // Exchange Name
-    var name = data['name'];
+    var name = data.name;
     // 52 Week high
-    var hi52 = data['wk52hi'];
+    var hi52 = data.wk52hi;
     // 52 Week low
-    var low52 = data['wk52lo'];
+    var low52 = data.wk52lo;
     //P/E Ratio
-    var peRatio = data['pe'];
-
+    var peRatio = data.pe;
 }
 
 // Setup key/secret for authentication and API endpoint URL
@@ -57,7 +49,7 @@ var configuration = {
   consumer_secret: "rknerQ5ki8yzKxvigA5d99vsxHiahcy58lGCaEhGwKQ4",
   access_token: "7LXGWjbYl8LgJuVJalQZPm8pPYiTq5WZFHTUypDZ7v42",
   access_secret: "KcCZCbBr4ztfmtEpJRS5ZzVf1H5lnl0cBobvFIu8TEs8"
-}
+};
 
 // Setup the OAuth Consumer
 var tradeking_consumer = new oauth.OAuth(
@@ -73,9 +65,16 @@ var stockExchangeTicker = {
     NASDAQ: "IXIC",
     DOW: "DJI",
     SP500: "GSPC"
-}
+};
 
 var symbol = "";
+
+function getRequestError(error, intent){
+    console.log(error);
+    context.succeed(
+    generateResponse(buildSpeechletResponse("My Market was unable to process your request with TradeKing for " + intent + ".", true),{})
+    );
+}
 
 exports.handler = (event, context) => {
 
@@ -111,25 +110,23 @@ exports.handler = (event, context) => {
                 // Removes excess characters
                 var spaceIndex = symbol.lastIndexOf(' ');
                 if (spaceIndex != -1){
-                    symbol = symbol.substring(spaceIndex + 1, symbol.length)
+                    symbol = symbol.substring(spaceIndex + 1, symbol.length);
                 }
 
                 tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + symbol,
                 configuration.access_token, configuration.access_secret,
                     function(error, data, response) {
-                        if (error){
-                            console.log(error);
+                        if (error)
+                            getRequestError(error, " retrieving information about " + symbol );
+                        else{
+                            // Parse the JSON data
+                            dataResponse = JSON.parse(data).response.quotes.quote;
                             context.succeed(
-                            generateResponse(buildSpeechletResponse("My Market was unable to process your request with TradeKing.", true),{})
+                                generateResponse(buildSpeechletResponse(stockExchange(dataResponse), true),{})
                             );
                         }
-                        // Parse the JSON data
-                        dataResponse = JSON.parse(data).response['quotes']['quote'];
-                        context.succeed(
-                            generateResponse(buildSpeechletResponse(stockExchange(dataResponse), true),{})
-                        );
                     }
-                )
+                );
             break;
 
             case "GetNewsAbout":
@@ -141,50 +138,45 @@ exports.handler = (event, context) => {
                 tradeking_consumer.get(configuration.api_url+'/market/news/search.json?symbols=' + keyword + '&maxhits=3',
                 configuration.access_token, configuration.access_secret,
                         function(error, data, response) {
-                            if (error){
-                                console.log(error);
+                            if (error)
+                                getRequestError(error, " retrieving news about " + keyword);
+                            else{
+                                dataResponse = JSON.parse(data);
+                                var resp = '';
+                                for (var i = 0 ; i < 3; i++)
+                                    resp = resp + dataResponse.response.articles.article[i].headline + '. ';
+                                console.log(resp);
                                 context.succeed(
-                                generateResponse(
-                                    buildSpeechletResponse("My Market was unable to process your request with TradeKing.", true),{})
+                                    generateResponse(buildSpeechletResponse(resp, true),{})
                                 );
                             }
-                            dataResponse = JSON.parse(data);
-                            var resp = '';
-                            for (var i = 0 ; i < 3; i++){
-                                resp = resp + dataResponse.response['articles']['article'][i]['headline'] + '. ';
-                            }
-                            console.log(resp);
-                            context.succeed(
-                                generateResponse(buildSpeechletResponse(resp, true),{})
-                            );
                     }
-                )
+                );
             break;
 
-
             case "GetNews":
-                console.log("get news function")
+                console.log("get news function");
                 var endpoint = "https://newsapi.org/v1/articles?source=" + 
                 "bloomberg&apiKey=4de8fd1a6b2c47ce8d98fce1185a556e";
-                var body = ""
+                var body = "";
                 https.get(endpoint, (response) => {
-                response.on('data', (chunk) => { body += chunk })
+                response.on('data', (chunk) => { body += chunk });
                 response.on('end', () => {
                     var dataResponse = JSON.parse(body);
                     //console.log(dataResponse)
                     var resp = '';
                     for (var i = 0 ; i < 3; i++){
-                        resp = resp + dataResponse['articles'][i]['title'] + '. ';
-                        resp = resp + dataResponse['articles'][i]['description'] + '<break time="2s"/> ';
-                        resp = resp + " Next Article. "
+                        resp = resp + dataResponse.articles[i].title + '. ';
+                        resp = resp + dataResponse.articles[i].description + '<break time="2s"/> ';
+                        resp = resp + " Next Article. ";
                     }
                     console.log("resp: ");
                     console.log(resp);
                     context.succeed(
                         generateResponse(buildSpeechletResponse(resp, true),{})
-                    )
-                })
-                })
+                    );
+                });
+                });
             break;
 
             case "GetPortfolio":
@@ -192,25 +184,21 @@ exports.handler = (event, context) => {
                 tradeking_consumer.get(configuration.api_url+'/accounts/' + demoAccount + '/holdings.json',
                 configuration.access_token, configuration.access_secret,
                     function(error, data, response) {
-                        if (error){
-                            console.log(error);
+                        if (error)
+                            getRequestError(error, " retrieving news about your portfolio");
+                        else{
+                            // Parse the JSON data
+                            dataResponse = JSON.parse(data).response.accountholdings;
+                            console.log(dataResponse);
+                            // TODO: CHANGE SPEECHLET FUNCTION TO 'portfolioReview(data)'
                             context.succeed(
-                            generateResponse(
-                                buildSpeechletResponse("My Market was unable to process your request with TradeKing.", true),{}
-                            )
-                        );
+                                generateResponse(
+                                    buildSpeechletResponse('stockExchange(dataResponse)', true),{}
+                                )
+                            );
                         }
-                        // Parse the JSON data
-                        dataResponse = JSON.parse(data).response['accountholdings'];
-                        console.log(dataResponse);
-                        // TODO: CHANGE SPEECHLET FUNCTION TO 'portfolioReview(data)'
-                        context.succeed(
-                            generateResponse(
-                                buildSpeechletResponse('stockExchange(dataResponse)', true),{}
-                            )
-                        );
                     }
-                )
+                );
             break;
           default:
             throw "Invalid intent";
@@ -242,5 +230,5 @@ generateResponse = (speechletResponse, sessionAttributes) => {
     version: "1.0",
     sessionAttributes: sessionAttributes,
     response: speechletResponse
-  }
-}
+  };
+};
