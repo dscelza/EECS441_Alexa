@@ -42,6 +42,25 @@ function stockDetailsHelper(data){
     var peRatio = data.pe;
 }
 
+// Endpoints for Tradier
+var tradier = {
+    endpoint: "sandbox.tradier.com",
+    symbolSearch: "/v1/markets/search?q=",
+    access_token: "qzMwTpKzmDeFez8dn4u2Lr2PM6GC"
+}
+
+// Tradier GET options
+var tradier_get = {
+    method: 'GET',
+    hostname: tradier.endpoint,
+    path: tradier.symbolSearch,
+    headers: {
+        'Authorization': 'Bearer ' + tradier.access_token,
+        'Accept' : 'application/json',
+        'Content-Type' : 'application/json'
+    }
+}
+
 // Setup key/secret for authentication and API endpoint URL
 var configuration = {
   api_url: "https://api.tradeking.com/v1",
@@ -69,6 +88,7 @@ var stockExchangeTicker = {
 
 var symbol = "";
 
+// General error message for TradeKing requests
 function getRequestError(error, intent){
     console.log(error);
     context.succeed(
@@ -112,18 +132,52 @@ exports.handler = (event, context) => {
                 if (spaceIndex != -1){
                     symbol = symbol.substring(spaceIndex + 1, symbol.length);
                 }
-
+                
                 tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + symbol,
                 configuration.access_token, configuration.access_secret,
                     function(error, data, response) {
                         if (error)
                             getRequestError(error, " retrieving information about " + symbol );
                         else{
-                            // Parse the JSON data
+                            console.log("NAME TO SYMBOL")
+                            // Symbol not recognized. Convert from Company Name to Ticker Symbol and try again.
+                            if (typeof data.last == 'undefined'){
+                                tradier_get.path = tradier.symbolSearch + symbol;
+                                var body = "";
+                                https.get(tradier_get, (response) => {
+                                response.on('data', (chunk) => { body += chunk });
+                                response.on('end', () => {
+                                    console.log("SYMBOL TRY2");
+                                    // Set body as first suggested ticker symbol
+                                    body = JSON.parse(body).securities;
+                                    if (Object.keys(body).length > 1)
+                                        body = body.security[0].symbol;
+                                    else
+                                        body = body.security.symbol;
+                                    
+                                    // Send GET to TradeKing with new symbol
+                                    tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + body,
+                                    configuration.access_token, configuration.access_secret,
+                                    function(error, data, response) {
+                                    if (error)
+                                        getRequestError(error, " retrieving information about " + body );
+                                        // Parse the JSON data
+                                        dataResponse = JSON.parse(data).response.quotes.quote;
+                                        context.succeed(
+                                            generateResponse(buildSpeechletResponse(stockExchange(dataResponse), true),{})
+                                        );
+                                    }
+                                );
+                                });
+                                });
+                            }
+                            else{
+                            // Received a TICKER SYMBOL from the user
                             dataResponse = JSON.parse(data).response.quotes.quote;
                             context.succeed(
                                 generateResponse(buildSpeechletResponse(stockExchange(dataResponse), true),{})
                             );
+                            }
                         }
                     }
                 );
