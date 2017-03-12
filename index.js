@@ -89,7 +89,7 @@ var stockExchangeTicker = {
 var symbol = "";
 
 // General error message for TradeKing requests
-function getRequestError(error, intent){
+function getRequestError(error, intent, context){
     console.log(error);
     context.succeed(
     generateResponse(buildSpeechletResponse("My Market was unable to process your request with TradeKing for " + intent + ".", true),{})
@@ -129,19 +129,19 @@ exports.handler = (event, context) => {
 
                 // Removes excess characters
                 var spaceIndex = symbol.lastIndexOf(' ');
-                if (spaceIndex != -1){
+                if (spaceIndex != -1)
                     symbol = symbol.substring(spaceIndex + 1, symbol.length);
-                }
                 
                 tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + symbol,
                 configuration.access_token, configuration.access_secret,
                     function(error, data, response) {
                         if (error)
-                            getRequestError(error, " retrieving information about " + symbol );
+                            getRequestError(error, " retrieving information about " + symbol, context);
                         else{
-                            console.log("NAME TO SYMBOL")
-                            // Symbol not recognized. Convert from Company Name to Ticker Symbol and try again.
-                            if (typeof data.last == 'undefined'){
+                            // If symbol not recognized then convert from Company Name to Ticker Symbol and try again.
+                            var definedTest = parseFloat(JSON.parse(data).response.quotes.quote.last);
+                            if (!definedTest){
+                                console.log("NAME TO SYMBOL")
                                 tradier_get.path = tradier.symbolSearch + symbol;
                                 var body = "";
                                 https.get(tradier_get, (response) => {
@@ -149,11 +149,14 @@ exports.handler = (event, context) => {
                                 response.on('end', () => {
                                     console.log("SYMBOL TRY2");
                                     // Set body as first suggested ticker symbol
-                                    body = JSON.parse(body).securities;
-                                    if (Object.keys(body).length > 1)
-                                        body = body.security[0].symbol;
+                                    
+                                    // TODO Fix bug where Tradier doesn't find any matches. 'disney'
+                                    // TODO Adjust excess character removal to allow full names. 'constellation brands'
+                                    body = JSON.parse(body).securities.security;
+                                    if (body instanceof Array)
+                                        body = body[0].symbol;
                                     else
-                                        body = body.security.symbol;
+                                        body = body.symbol;
                                     
                                     // Send GET to TradeKing with new symbol
                                     tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + body,
@@ -167,7 +170,7 @@ exports.handler = (event, context) => {
                                             generateResponse(buildSpeechletResponse(stockExchange(dataResponse), true),{})
                                         );
                                     }
-                                );
+                                    );
                                 });
                                 });
                             }
@@ -193,7 +196,7 @@ exports.handler = (event, context) => {
                 configuration.access_token, configuration.access_secret,
                         function(error, data, response) {
                             if (error)
-                                getRequestError(error, " retrieving news about " + keyword);
+                                getRequestError(error, " retrieving news about " + keyword, context);
                             else{
                                 dataResponse = JSON.parse(data);
                                 var resp = '';
@@ -239,7 +242,7 @@ exports.handler = (event, context) => {
                 configuration.access_token, configuration.access_secret,
                     function(error, data, response) {
                         if (error)
-                            getRequestError(error, " retrieving news about your portfolio");
+                            getRequestError(error, " retrieving news about your portfolio", context);
                         else{
                             // Parse the JSON data
                             dataResponse = JSON.parse(data).response.accountholdings;
