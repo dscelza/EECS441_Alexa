@@ -21,25 +21,24 @@ function stockExchange(data){
 // Portfolio specific data
 function portfolioReview(data){
     // Account market value
-    var marketvalue = data.marketvalue;
+    var marketvalue = data.totalsecurities;
     // Daily change from previous day
-    var dailychange = data.change;
+    var dailychange = 0;
+    // Cost of purchase
+    var costBasis = 0;
+    // Dollar change since purchase
+    var gainloss = 0;
+    for (var i = 0; i < Object.keys(data).length; i++){
+        gainloss += parseFloat(data.holding[i].gainloss);
+        costBasis += parseFloat(data.holding[i].costbasis);
+        var pctChange = (parseFloat(data.holding[i].marketvaluechange)*parseFloat(data.holding[i].qty))/parseFloat(data.holding[i].marketvalue);
+        dailychange += pctChange/(parseFloat(data.holding[i].marketvalue)/parseFloat(marketvalue));
+    }
     // Total change for account
-    var totalchange = data.gainloss;
+    var totalchange = parseFloat((gainloss/costBasis)*100).toFixed(2);
+    dailychange = parseFloat(dailychange).toFixed(2);
     // Alexa speech response
     return ('Your account balance of ' + marketvalue + ' dollars has changed by ' + dailychange + ' percent today and overall has changed by ' + totalchange + ' percent to date.');
-}
-
-//Detailed stock response helper function
-function stockDetailsHelper(data){
-    // Exchange Name
-    var name = data.name;
-    // 52 Week high
-    var hi52 = data.wk52hi;
-    // 52 Week low
-    var low52 = data.wk52lo;
-    //P/E Ratio
-    var peRatio = data.pe;
 }
 
 // Endpoints for Tradier
@@ -79,12 +78,6 @@ var tradeking_consumer = new oauth.OAuth(
   "1.0",
   null,
   "HMAC-SHA1");
-
-var stockExchangeTicker = {
-    NASDAQ: "IXIC",
-    DOW: "DJI",
-    SP500: "GSPC"
-};
 
 var symbol = "";
 
@@ -246,11 +239,9 @@ exports.handler = (event, context) => {
                         else{
                             // Parse the JSON data
                             dataResponse = JSON.parse(data).response.accountholdings;
-                            console.log(dataResponse);
-                            // TODO: CHANGE SPEECHLET FUNCTION TO 'portfolioReview(data)'
                             context.succeed(
                                 generateResponse(
-                                    buildSpeechletResponse('stockExchange(dataResponse)', true),{}
+                                    buildSpeechletResponse(portfolioReview(dataResponse), true),{}
                                 )
                             );
                         }
