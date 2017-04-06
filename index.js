@@ -22,6 +22,10 @@ function stockExchange(data){
 function portfolioReview(data){
     // Account market value
     var marketvalue = data.totalsecurities;
+    // Dollar value of balance
+    var dollarMV = Math.floor(marketvalue);
+    // Cents value of balance
+    var centMV = (marketvalue - dollarMV).toFixed(2) * 100;
     // Daily change from previous day
     var dailychange = 0;
     // Cost of purchase
@@ -37,8 +41,19 @@ function portfolioReview(data){
     // Total change for account
     var totalchange = parseFloat((gainloss/costBasis)*100).toFixed(2);
     dailychange = parseFloat(dailychange).toFixed(2);
+
+    // Percent change phrasing. Adjust for no change.
+    var pctPhrase = "changed by " + dailychange + " percent";
+    if (pctChange == 0)
+        pctPhrase = "not changed";
+
     // Alexa speech response
-    return ('Your account balance of ' + marketvalue + ' dollars has changed by ' + dailychange + ' percent today and overall has changed by ' + totalchange + ' percent to date.');
+    return ('Your account balance of ' + dollarMV + ' dollars and ' + centMV + ' cents has ' + pctPhrase + ' today and overall has changed by ' + totalchange + ' percent to date.');
+    
+    
+    // TODO: Add biggest movers. (Increase or decrease based on percentage).
+    // TODO: Would you like to hear news about the biggest mover?
+    
 }
 
 // Endpoints for Tradier
@@ -103,11 +118,22 @@ exports.handler = (event, context) => {
       case "LaunchRequest":
         // Launch Request
         console.log(`LAUNCH REQUEST`);
-        context.succeed(
-          generateResponse(
-            buildSpeechletResponse("Welcome to an Alexa Skill, this is running on a deployed lambda function", true),
-            {}
-          )
+        var demoAccount = '38937548';
+        tradeking_consumer.get(configuration.api_url+'/accounts/' + demoAccount + '/holdings.json',
+        configuration.access_token, configuration.access_secret,
+            function(error, data, response) {
+                if (error)
+                    getRequestError(error, " retrieving news about your portfolio", context);
+                else{
+                    // Parse the JSON data
+                    dataResponse = JSON.parse(data).response.accountholdings;
+                    context.succeed(
+                        generateResponse(
+                            buildSpeechletResponse("Welcome to my market. " + portfolioReview(dataResponse), true),{}
+                        )
+                    );
+                }
+            }
         );
         break;
 
@@ -119,11 +145,6 @@ exports.handler = (event, context) => {
           case "GetStockPrice":
                 symbol = event.request.intent.slots.StockSymbol.value;
                 symbol = symbol.replace(/[^a-zA-Z ]+/g, '');
-
-                // Removes excess characters
-                var spaceIndex = symbol.lastIndexOf(' ');
-                if (spaceIndex != -1)
-                    symbol = symbol.substring(spaceIndex + 1, symbol.length);
                 
                 tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + symbol,
                 configuration.access_token, configuration.access_secret,
