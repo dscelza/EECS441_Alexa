@@ -1,11 +1,9 @@
-GetStockPrice price of {StockSymbol} 
+GetStockPrice price of {StockSymbol}
+GetStockPrice stock price of {StockSymbol}
+GetStockPrice tell me the stock price of {StockSymbol}
 
-GetNews get current news
-GetNews get popular news
-GetNews get news
+GetNewsAbout news about {NewsWord}
 
-GetNewsAbout tell me about the symbol {NewsWord}
-GetNewsAbout find news about {NewsWord}
-GetNewsAbout tell me about {NewsWord}
+GetNews get market news
 
-GetStockResp get response for {stockSymbol}
+GetPortfolio my portfolio balance
