@@ -13,9 +13,20 @@ function stockExchange(data){
         changeType = 'down';
     else
         changeType = 'unchanged';
+
+    // Dollar value of balance
+    var dollarMV = Math.floor(data.last);
+    // Cents value of balance
+    var centMV = (data.last - dollarMV).toFixed(2) * 100;
+
+    // Percent phrasing. Adjust if stock has not increased/decreased.
+    var pctPhrase = changeType + ' by ' + data.pchg + ' percent';
+    if (changeType === 'unchanged')
+        pctPhrase = 'unchanged';
+
     // Alexa speech response
     // [Stock Name] is [up/down/unchanged] by [percentange] percent and trading at [float] dollars;
-    return (data.name + ' is ' +  changeType + ' by ' + data.pchg + ' percent and trading at ' + parseFloat(data.last).toFixed(2) + ' dollars.');
+    return (data.name + ' is ' + pctPhrase + 'and trading at ' + dollarMV + ' dollars and ' + centMV + 'cents.');
 }
 
 // Portfolio specific data
