@@ -41,13 +41,21 @@ function portfolioReview(data){
     var dailychange = 0;
     // Cost of purchase
     var costBasis = 0;
+    
+    var largest_mover_ticker;
+    var largest_change = 0;
+
     // Dollar change since purchase
     var gainloss = 0;
     for (var i = 0; i < Object.keys(data).length; i++){
         gainloss += parseFloat(data.holding[i].gainloss);
         costBasis += parseFloat(data.holding[i].costbasis);
         var pctChange = (parseFloat(data.holding[i].marketvaluechange)*parseFloat(data.holding[i].qty))/parseFloat(data.holding[i].marketvalue);
-        dailychange += pctChange/(parseFloat(data.holding[i].marketvalue)/parseFloat(marketvalue));
+        if (pctChange > largest_change) { 
+		largest_mover_ticker = data.holdings[i];
+		largest_change = data.holdings[i].gainloss;
+	}
+	dailychange += pctChange/(parseFloat(data.holding[i].marketvalue)/parseFloat(marketvalue));
     }
     // Total change for account
     var totalchange = parseFloat((gainloss/costBasis)*100).toFixed(2);
@@ -59,10 +67,15 @@ function portfolioReview(data){
         pctPhrase = "not changed";
 
     // Alexa speech response
-    return ('Your account balance of ' + dollarMV + ' dollars and ' + centMV + ' cents has ' + pctPhrase + ' today and overall has changed by ' + totalchange + ' percent to date.');
+    var account_msg = 'Your account balance of ' + dollarMV + ' dollars and ' + centMV + ' cents has ' + 
+				pctPhrase + ' today and overall has changed by ' + totalchange + ' percent to date.';
     
-    
-    // TODO: Add biggest movers. (Increase or decrease based on percentage).
+   //biggest mover
+   var biggest_mover = 'Your biggest mover was ' + largest_mover_ticker + ' changing  by ' + largest_change;
+   var hear_more = 'Would you like to hear more about ' + largest_mober_ticker;
+
+   return (account_msg + biggest_mover + hear_more);
+	
     // TODO: Would you like to hear news about the biggest mover?
     
 }
