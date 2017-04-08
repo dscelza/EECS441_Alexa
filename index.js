@@ -52,7 +52,7 @@ function portfolioReview(data){
         costBasis += parseFloat(data.holding[i].costbasis);
         var pctChange = (parseFloat(data.holding[i].marketvaluechange)*parseFloat(data.holding[i].qty))/parseFloat(data.holding[i].marketvalue);
         if (pctChange > largest_change) { 
-		largest_mover_ticker = data.holdings[i];
+		largest_mover_ticker = data.holdings[i].symbol;
 		largest_change = data.holdings[i].gainloss;
 	}
 	dailychange += pctChange/(parseFloat(data.holding[i].marketvalue)/parseFloat(marketvalue));
