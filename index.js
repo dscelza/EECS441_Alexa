@@ -52,10 +52,10 @@ function portfolioReview(data){
         costBasis += parseFloat(data.holding[i].costbasis);
         var pctChange = (parseFloat(data.holding[i].marketvaluechange)*parseFloat(data.holding[i].qty))/parseFloat(data.holding[i].marketvalue);
         if (pctChange > largest_change) {
-		largest_mover_ticker = data.holdings[i].symbol;
-		largest_change = data.holdings[i].gainloss;
-	}
-	dailychange += pctChange/(parseFloat(data.holding[i].marketvalue)/parseFloat(marketvalue));
+      		largest_mover_ticker = data.holding[i].symbol;
+      		largest_change = data.holding[i].gainloss;
+      	}
+	       dailychange += pctChange/(parseFloat(data.holding[i].marketvalue)/parseFloat(marketvalue));
     }
     // Total change for account
     var totalchange = parseFloat((gainloss/costBasis)*100).toFixed(2);
@@ -63,16 +63,18 @@ function portfolioReview(data){
 
     // Percent change phrasing. Adjust for no change.
     var pctPhrase = "changed by " + dailychange + " percent";
-    if (pctChange == 0)
+    console.log(dailychange);
+    if (dailychange.toString() === '0.00' || dailychange.toString() === '-0.00')
         pctPhrase = "not changed";
 
     // Alexa speech response
     var account_msg = 'Your account balance of ' + dollarMV + ' dollars and ' + centMV + ' cents has ' +
-				pctPhrase + ' today and overall has changed by ' + totalchange + ' percent to date.';
+				pctPhrase + ' today and overall has changed by ' + totalchange + ' percent to date. ';
 
+   // TODO: Disable when no movement...
    //biggest mover
-   var biggest_mover = 'Your biggest mover was ' + largest_mover_ticker + ' changing  by ' + largest_change;
-   var hear_more = 'Would you like to hear more about ' + largest_mober_ticker;
+   var biggest_mover = 'Your biggest mover was ' + largest_mover_ticker + ' changing by ' + largest_change + '. ';
+   var hear_more = 'Would you like to hear more about ' + largest_mover_ticker + '?';
 
    return (account_msg + biggest_mover + hear_more);
 
