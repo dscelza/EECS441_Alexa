@@ -26,7 +26,7 @@ function stockExchange(data){
 
     // Alexa speech response
     // [Stock Name] is [up/down/unchanged] by [percentange] percent and trading at [float] dollars;
-    return (data.name + ' is ' + pctPhrase + 'and trading at ' + dollarMV + ' dollars and ' + centMV + 'cents.');
+    return (data.name + ' is ' + pctPhrase + ' and trading at ' + dollarMV + ' dollars and ' + centMV + ' cents.');
 }
 
 // Portfolio specific data
@@ -41,7 +41,7 @@ function portfolioReview(data){
     var dailychange = 0;
     // Cost of purchase
     var costBasis = 0;
-    
+
     var largest_mover_ticker;
     var largest_change = 0;
 
@@ -51,7 +51,7 @@ function portfolioReview(data){
         gainloss += parseFloat(data.holding[i].gainloss);
         costBasis += parseFloat(data.holding[i].costbasis);
         var pctChange = (parseFloat(data.holding[i].marketvaluechange)*parseFloat(data.holding[i].qty))/parseFloat(data.holding[i].marketvalue);
-        if (pctChange > largest_change) { 
+        if (pctChange > largest_change) {
 		largest_mover_ticker = data.holdings[i].symbol;
 		largest_change = data.holdings[i].gainloss;
 	}
@@ -67,17 +67,17 @@ function portfolioReview(data){
         pctPhrase = "not changed";
 
     // Alexa speech response
-    var account_msg = 'Your account balance of ' + dollarMV + ' dollars and ' + centMV + ' cents has ' + 
+    var account_msg = 'Your account balance of ' + dollarMV + ' dollars and ' + centMV + ' cents has ' +
 				pctPhrase + ' today and overall has changed by ' + totalchange + ' percent to date.';
-    
+
    //biggest mover
    var biggest_mover = 'Your biggest mover was ' + largest_mover_ticker + ' changing  by ' + largest_change;
    var hear_more = 'Would you like to hear more about ' + largest_mober_ticker;
 
    return (account_msg + biggest_mover + hear_more);
-	
+
     // TODO: Would you like to hear news about the biggest mover?
-    
+
 }
 
 // Endpoints for Tradier
@@ -128,6 +128,56 @@ function getRequestError(error, intent, context){
     );
 }
 
+// Send GET to TradeKing with new symbol
+function tradeking_get_stock(context, body, callback){
+  tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + body,
+  configuration.access_token, configuration.access_secret,
+  function(error, data, response) {
+    if (error){
+      getRequestError(error, " retrieving information about " + body );
+      return callback("ERROR");
+    }
+    else{
+      // Evaluate if data is valid
+      var definedTest = parseFloat(JSON.parse(data).response.quotes.quote.last);
+      if (!definedTest){
+        console.log("NOT DEFINED!");
+        return callback("NOT_DEFINED");
+      }
+      else{
+        console.log("DEFINED!")
+        // Parse the JSON data
+        dataResponse = JSON.parse(data).response.quotes.quote;
+        context.succeed(
+            generateResponse(buildSpeechletResponse(stockExchange(dataResponse), true),{})
+        );
+        return callback("SUCCESS");
+      }
+    }
+  });
+}
+
+// Send GET to TradeKing with porfolio number
+function tradeking_get_portfolio(context, account, callback){
+  tradeking_consumer.get(configuration.api_url+'/accounts/' + account + '/holdings.json',
+  configuration.access_token, configuration.access_secret,
+      function(error, data, response) {
+          if (error){
+            getRequestError(error, " retrieving news about your portfolio", context);
+            return callback("ERROR");
+          }
+          else{
+              // Parse the JSON data
+              dataResponse = JSON.parse(data).response.accountholdings;
+              return callback(dataResponse)
+          }
+      }
+  );
+}
+
+
+
+
 exports.handler = (event, context) => {
 
   try {
@@ -143,85 +193,66 @@ exports.handler = (event, context) => {
         // Launch Request
         console.log(`LAUNCH REQUEST`);
         var demoAccount = '38937548';
-        tradeking_consumer.get(configuration.api_url+'/accounts/' + demoAccount + '/holdings.json',
-        configuration.access_token, configuration.access_secret,
-            function(error, data, response) {
-                if (error)
-                    getRequestError(error, " retrieving news about your portfolio", context);
-                else{
-                    // Parse the JSON data
-                    dataResponse = JSON.parse(data).response.accountholdings;
-                    context.succeed(
-                        generateResponse(
-                            buildSpeechletResponse("Welcome to my market. " + portfolioReview(dataResponse), true),{}
-                        )
-                    );
-                }
-            }
-        );
+        tradeking_get_portfolio(context, demoAccount, function(response){
+          if (response !== "ERROR"){
+            context.succeed(
+                generateResponse(
+                    buildSpeechletResponse("Welcome to my market. " + 'portfolioReview(dataResponse)', true),{}
+                )
+            );
+          }
+        });
         break;
 
       case "IntentRequest":
         // Intent Request
         console.log(`INTENT REQUEST`);
-
+        console.log(event.request.intent.name);
         switch(event.request.intent.name) {
           case "GetStockPrice":
                 symbol = event.request.intent.slots.StockSymbol.value;
                 symbol = symbol.replace(/[^a-zA-Z ]+/g, '');
-                
-                tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + symbol,
-                configuration.access_token, configuration.access_secret,
-                    function(error, data, response) {
-                        if (error)
-                            getRequestError(error, " retrieving information about " + symbol, context);
-                        else{
-                            // If symbol not recognized then convert from Company Name to Ticker Symbol and try again.
-                            var definedTest = parseFloat(JSON.parse(data).response.quotes.quote.last);
-                            if (!definedTest){
-                                console.log("NAME TO SYMBOL")
-                                tradier_get.path = tradier.symbolSearch + symbol;
-                                var body = "";
-                                https.get(tradier_get, (response) => {
-                                response.on('data', (chunk) => { body += chunk });
-                                response.on('end', () => {
-                                    console.log("SYMBOL TRY2");
-                                    // Set body as first suggested ticker symbol
-                                    
-                                    // TODO Fix bug where Tradier doesn't find any matches. 'disney'
-                                    // TODO Adjust excess character removal to allow full names. 'constellation brands'
-                                    body = JSON.parse(body).securities.security;
-                                    if (body instanceof Array)
-                                        body = body[0].symbol;
-                                    else
-                                        body = body.symbol;
-                                    
-                                    // Send GET to TradeKing with new symbol
-                                    tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + body,
-                                    configuration.access_token, configuration.access_secret,
-                                    function(error, data, response) {
-                                    if (error)
-                                        getRequestError(error, " retrieving information about " + body );
-                                        // Parse the JSON data
-                                        dataResponse = JSON.parse(data).response.quotes.quote;
-                                        context.succeed(
-                                            generateResponse(buildSpeechletResponse(stockExchange(dataResponse), true),{})
-                                        );
-                                    }
-                                    );
-                                });
-                                });
-                            }
-                            else{
-                            // Received a TICKER SYMBOL from the user
-                            dataResponse = JSON.parse(data).response.quotes.quote;
-                            context.succeed(
-                                generateResponse(buildSpeechletResponse(stockExchange(dataResponse), true),{})
-                            );
-                            }
+                tradeking_get_stock(context, symbol, function(status) {
+                  if (status === "NOT_DEFINED"){
+                    console.log("NAME TO SYMBOL: " + symbol);
+                    // Replace spaces with %20 for URL
+                    symbol = symbol.split(' ').join('%20');
+                    // Send to Tradier
+                    tradier_get.path = tradier.symbolSearch + symbol;
+                    var body = "";
+                    https.get(tradier_get, (response) => {
+                    response.on('data', (chunk) => { body += chunk });
+                    response.on('end', () => {
+                        console.log("SYMBOL TRY2");
+                        // TODO Fix bug where Tradier doesn't find any matches. 'disney'
+                        // Sets body as first suggested ticker symbol
+                        if (JSON.parse(body).securities != null){
+                          body = JSON.parse(body).securities.security;
+                          console.log(body);
+                          if (body instanceof Array)
+                              body = body[0].symbol;
+                          else
+                              body = body.symbol;
+                          console.log("BODY: " + body)
+                              tradeking_get_stock(context, body, function(status) {
+                                console.log("STATUS: " + status);
+                              });
                         }
-                    }
-                );
+                        else{
+                          // Tradier failed to find a match
+                          console.log("Tradier failed to find a match.")
+                          context.succeed(
+                              generateResponse(
+                                  buildSpeechletResponse("My Market was unable to find a match for " + symbol.split('%20').join(' ') + ".", true),{}
+                              )
+                          );
+                        }
+
+
+                    });
+                    });
+                  }
+                });
             break;
 
             case "GetNewsAbout":
@@ -251,7 +282,7 @@ exports.handler = (event, context) => {
 
             case "GetNews":
                 console.log("get news function");
-                var endpoint = "https://newsapi.org/v1/articles?source=" + 
+                var endpoint = "https://newsapi.org/v1/articles?source=" +
                 "bloomberg&apiKey=4de8fd1a6b2c47ce8d98fce1185a556e";
                 var body = "";
                 https.get(endpoint, (response) => {
@@ -276,22 +307,15 @@ exports.handler = (event, context) => {
 
             case "GetPortfolio":
                 var demoAccount = '38937548';
-                tradeking_consumer.get(configuration.api_url+'/accounts/' + demoAccount + '/holdings.json',
-                configuration.access_token, configuration.access_secret,
-                    function(error, data, response) {
-                        if (error)
-                            getRequestError(error, " retrieving news about your portfolio", context);
-                        else{
-                            // Parse the JSON data
-                            dataResponse = JSON.parse(data).response.accountholdings;
-                            context.succeed(
-                                generateResponse(
-                                    buildSpeechletResponse(portfolioReview(dataResponse), true),{}
-                                )
-                            );
-                        }
-                    }
-                );
+                tradeking_get_portfolio(context, demoAccount, function(response){
+                  if (response !== "ERROR"){
+                    context.succeed(
+                        generateResponse(
+                            buildSpeechletResponse(portfolioReview(response), true),{}
+                        )
+                    );
+                  }
+                });
             break;
           default:
             throw "Invalid intent";
