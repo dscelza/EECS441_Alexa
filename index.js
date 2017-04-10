@@ -273,6 +273,10 @@ exports.handler = (event, context) => {
                     var numRounds = 0;
                     var string = body.split(/\s+/);
                     var resp = '';
+
+                    if (string.length < 55){
+                        // TODO: enter the code to 
+                    }
                     while(numRounds < 2){
                         var title = '';
                         var description = '';
