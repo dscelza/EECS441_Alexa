@@ -257,30 +257,65 @@ exports.handler = (event, context) => {
                 });
             break;
 
+
             case "GetNewsAbout":
                 keyword = event.request.intent.slots.NewsWord.value;
                 keyword = keyword.replace(/[^a-zA-Z ]+/g, '');
-                console.log("get update function");
-                console.log(keyword);
+                console.log("get news about function");
+                var endpoint = "https://finance.yahoo.com/rss/headline?s=" + keyword;
+                var body = "";
+                https.get(endpoint, (response) => {
+                    response.on('data', (chunk) => { body += chunk });
+                    response.on('end', () => {
+                    var count = 0;
+                    var numRounds = 0;
+                    var string = body.split(/\s+/);
+                    var resp = '';
+                    while(numRounds < 2){
+                        var title = '';
+                        var description = '';
+                        
+                        while(string[count] != '<item>'){
+                            count += 1;
+                            //console.log(count);
+                            //console.log(string[count]);
+                        }
+                        count +=1;
+                        description = description + string[count].substring(13, string[count].length) + ' ';
+                        count +=1;
+                        while (string[count][string[count].length-1] != '>'){
+                            description = description + string[count] + ' ';
+                            count += 1;
+                        }
+                        description += string[count].substring(0,string[count].length - 14);
 
-                tradeking_consumer.get(configuration.api_url+'/market/news/search.json?symbols=' + keyword + '&maxhits=3',
-                configuration.access_token, configuration.access_secret,
-                        function(error, data, response) {
-                            if (error)
-                                getRequestError(error, " retrieving news about " + keyword, context);
-                            else{
-                                dataResponse = JSON.parse(data);
-                                var resp = '';
-                                for (var i = 0 ; i < 3; i++)
-                                    resp = resp + dataResponse.response.articles.article[i].headline + '. ';
-                                console.log(resp);
-                                context.succeed(
-                                    generateResponse(buildSpeechletResponse(resp, true),{})
-                                );
+                        numLines = 0;
+                        while (numLines < 4){
+                            if (string[count][string[count].length-1] == '>') {
+                                numLines += 1;
                             }
-                    }
-                );
+                            count += 1;
+                        }
+
+                        title = title + string[count].substring(7, string[count].length) + ' ';
+                        count += 1;
+                        while (string[count][string[count].length-1] != '>'){
+                            title = title + string[count] + ' ';
+                            count += 1;
+                        }
+                        title += string[count].substring(0,string[count].length - 8)
+
+                        resp = resp + title + ' ' + description + ' ';
+                        numRounds += 1;
+                    }    
+                        
+                    context.succeed(
+                       generateResponse(buildSpeechletResponse(resp, true),{})
+                    );
+                });
+                });
             break;
+
 
             case "GetNews":
                 console.log("get news function");
