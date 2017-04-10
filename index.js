@@ -41,7 +41,7 @@ function portfolioReview(data){
     var dailychange = 0;
     // Cost of purchase
     var costBasis = 0;
-
+    var pctChange = 0;
     var largest_mover_ticker;
     var largest_change = 0;
 
@@ -50,17 +50,18 @@ function portfolioReview(data){
     for (var i = 0; i < Object.keys(data).length; i++){
         gainloss += parseFloat(data.holding[i].gainloss);
         costBasis += parseFloat(data.holding[i].costbasis);
-        var pctChange = (parseFloat(data.holding[i].marketvaluechange)*parseFloat(data.holding[i].qty))/parseFloat(data.holding[i].marketvalue);
-        if (pctChange > largest_change) {
-      		largest_mover_ticker = data.holding[i].symbol;
-      		largest_change = data.holding[i].gainloss;
+        // marketvaluechange/(marketvalue - marketvaluechange)
+        pctChange = parseFloat(data.holding[i].marketvaluechange)/(parseFloat(data.holding[i].marketvalue) - parseFloat(data.holding[i].marketvaluechange));
+
+        if (Math.abs(pctChange) > Math.abs(largest_change)) {
+      		largest_mover_ticker = data.holding[i].instrument.sym;
+      		largest_change = pctChange;
       	}
-	       dailychange += pctChange/(parseFloat(data.holding[i].marketvalue)/parseFloat(marketvalue));
+	       dailychange += pctChange * ((data.holding[i].qty * parseFloat(data.holding[i].marketvalue))/marketvalue);
     }
     // Total change for account
     var totalchange = parseFloat((gainloss/costBasis)*100).toFixed(2);
-    dailychange = parseFloat(dailychange).toFixed(2);
-
+    dailychange = parseFloat(dailychange*100).toFixed(2);
     // Percent change phrasing. Adjust for no change.
     var pctPhrase = "changed by " + dailychange + " percent";
     console.log(dailychange);
@@ -70,10 +71,11 @@ function portfolioReview(data){
     // Alexa speech response
     var account_msg = 'Your account balance of ' + dollarMV + ' dollars and ' + centMV + ' cents has ' +
 				pctPhrase + ' today and overall has changed by ' + totalchange + ' percent to date. ';
+    if (dailychange.toString() === '0.00' || dailychange.toString() === '-0.00')
+        return account_msg;
 
-   // TODO: Disable when no movement...
    //biggest mover
-   var biggest_mover = 'Your biggest mover was ' + largest_mover_ticker + ' changing by ' + largest_change + '. ';
+   var biggest_mover = 'Your biggest mover was ' + largest_mover_ticker + ' changing by ' + (largest_change * 100).toFixed(2) + ' percent. ';
    var hear_more = 'Would you like to hear more about ' + largest_mover_ticker + '?';
 
    return (account_msg + biggest_mover + hear_more);
@@ -274,7 +276,7 @@ exports.handler = (event, context) => {
                     while(numRounds < 2){
                         var title = '';
                         var description = '';
-                        
+
                         while(string[count] != '<item>'){
                             count += 1;
                             //console.log(count);
@@ -307,8 +309,8 @@ exports.handler = (event, context) => {
 
                         resp = resp + title + ' ' + description + ' ';
                         numRounds += 1;
-                    }    
-                        
+                    }
+
                     context.succeed(
                        generateResponse(buildSpeechletResponse(resp, true),{})
                     );
