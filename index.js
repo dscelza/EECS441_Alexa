@@ -5,102 +5,102 @@ var oauth = require('oauth');
 
 //General stock response helper function
 function stockExchange(data){
-    // Change type (even, up, down)
-    var changeType = '';
-    if (parseFloat(data.last) > parseFloat(data.pcls))
-        changeType = 'up';
-    else if (parseFloat(data.last) < parseFloat(data.pcls))
-        changeType = 'down';
-    else
-        changeType = 'unchanged';
+  // Change type (even, up, down)
+  var changeType = '';
+  if (parseFloat(data.last) > parseFloat(data.pcls))
+  changeType = 'up';
+  else if (parseFloat(data.last) < parseFloat(data.pcls))
+  changeType = 'down';
+  else
+  changeType = 'unchanged';
 
-    // Dollar value of balance
-    var dollarMV = Math.floor(data.last);
-    // Cents value of balance
-    var centMV = (data.last - dollarMV).toFixed(2) * 100;
+  // Dollar value of balance
+  var dollarMV = Math.floor(data.last);
+  // Cents value of balance
+  var centMV = (data.last - dollarMV).toFixed(2) * 100;
 
-    // Percent phrasing. Adjust if stock has not increased/decreased.
-    var pctPhrase = changeType + ' by ' + data.pchg + ' percent';
-    if (changeType === 'unchanged')
-        pctPhrase = 'unchanged';
+  // Percent phrasing. Adjust if stock has not increased/decreased.
+  var pctPhrase = changeType + ' by ' + data.pchg + ' percent';
+  if (changeType === 'unchanged')
+  pctPhrase = 'unchanged';
 
-    // Alexa speech response
-    // [Stock Name] is [up/down/unchanged] by [percentange] percent and trading at [float] dollars;
-    return (data.name + ' is ' + pctPhrase + ' and trading at ' + dollarMV + ' dollars and ' + centMV + ' cents.');
+  // Alexa speech response
+  // [Stock Name] is [up/down/unchanged] by [percentange] percent and trading at [float] dollars;
+  return (data.name + ' is ' + pctPhrase + ' and trading at ' + dollarMV + ' dollars and ' + centMV + ' cents.');
 }
 
 // Portfolio specific data
 function portfolioReview(data){
-    // Account market value
-    var marketvalue = data.totalsecurities;
-    // Dollar value of balance
-    var dollarMV = Math.floor(marketvalue);
-    // Cents value of balance
-    var centMV = (marketvalue - dollarMV).toFixed(2) * 100;
-    // Daily change from previous day
-    var dailychange = 0;
-    // Cost of purchase
-    var costBasis = 0;
-    var pctChange = 0;
-    var largest_mover_ticker;
-    var largest_change = 0;
+  // Account market value
+  var marketvalue = data.totalsecurities;
+  // Dollar value of balance
+  var dollarMV = Math.floor(marketvalue);
+  // Cents value of balance
+  var centMV = (marketvalue - dollarMV).toFixed(2) * 100;
+  // Daily change from previous day
+  var dailychange = 0;
+  // Cost of purchase
+  var costBasis = 0;
+  var pctChange = 0;
+  var largest_mover_ticker;
+  var largest_change = 0;
 
-    // Dollar change since purchase
-    var gainloss = 0;
-    for (var i = 0; i < Object.keys(data).length; i++){
-        gainloss += parseFloat(data.holding[i].gainloss);
-        costBasis += parseFloat(data.holding[i].costbasis);
-        // marketvaluechange/(marketvalue - marketvaluechange)
-        pctChange = parseFloat(data.holding[i].marketvaluechange)/(parseFloat(data.holding[i].marketvalue) - parseFloat(data.holding[i].marketvaluechange));
+  // Dollar change since purchase
+  var gainloss = 0;
+  for (var i = 0; i < Object.keys(data).length; i++){
+    gainloss += parseFloat(data.holding[i].gainloss);
+    costBasis += parseFloat(data.holding[i].costbasis);
+    // marketvaluechange/(marketvalue - marketvaluechange)
+    pctChange = parseFloat(data.holding[i].marketvaluechange)/(parseFloat(data.holding[i].marketvalue) - parseFloat(data.holding[i].marketvaluechange));
 
-        if (Math.abs(pctChange) > Math.abs(largest_change)) {
-      		largest_mover_ticker = data.holding[i].instrument.sym;
-      		largest_change = pctChange;
-      	}
-	       dailychange += pctChange * ((data.holding[i].qty * parseFloat(data.holding[i].marketvalue))/marketvalue);
+    if (Math.abs(pctChange) > Math.abs(largest_change)) {
+      largest_mover_ticker = data.holding[i].instrument.sym;
+      largest_change = pctChange;
     }
-    // Total change for account
-    var totalchange = parseFloat((gainloss/costBasis)*100).toFixed(2);
-    dailychange = parseFloat(dailychange*100).toFixed(2);
-    // Percent change phrasing. Adjust for no change.
-    var pctPhrase = "changed by " + dailychange + " percent";
-    console.log(dailychange);
-    if (dailychange.toString() === '0.00' || dailychange.toString() === '-0.00')
-        pctPhrase = "not changed";
+    dailychange += pctChange * ((data.holding[i].qty * parseFloat(data.holding[i].marketvalue))/marketvalue);
+  }
+  // Total change for account
+  var totalchange = parseFloat((gainloss/costBasis)*100).toFixed(2);
+  dailychange = parseFloat(dailychange*100).toFixed(2);
+  // Percent change phrasing. Adjust for no change.
+  var pctPhrase = "changed by " + dailychange + " percent";
+  console.log(dailychange);
+  if (dailychange.toString() === '0.00' || dailychange.toString() === '-0.00')
+  pctPhrase = "not changed";
 
-    // Alexa speech response
-    var account_msg = 'Your account balance of ' + dollarMV + ' dollars and ' + centMV + ' cents has ' +
-				pctPhrase + ' today and overall has changed by ' + totalchange + ' percent to date. ';
-    if (dailychange.toString() === '0.00' || dailychange.toString() === '-0.00')
-        return account_msg;
+  // Alexa speech response
+  var account_msg = 'Your account balance of ' + dollarMV + ' dollars and ' + centMV + ' cents has ' +
+  pctPhrase + ' today and overall has changed by ' + totalchange + ' percent to date. ';
+  if (dailychange.toString() === '0.00' || dailychange.toString() === '-0.00')
+  return account_msg;
 
-   //biggest mover
-   var biggest_mover = 'Your biggest mover was ' + largest_mover_ticker + ' changing by ' + (largest_change * 100).toFixed(2) + ' percent. ';
-   var hear_more = 'Would you like to hear more about ' + largest_mover_ticker + '?';
+  //biggest mover
+  var biggest_mover = 'Your biggest mover was ' + largest_mover_ticker + ' changing by ' + (largest_change * 100).toFixed(2) + ' percent. ';
+  var hear_more = 'Would you like to hear more about ' + largest_mover_ticker + '?';
 
-   return (account_msg + biggest_mover + hear_more);
+  return (account_msg + biggest_mover + hear_more);
 
-    // TODO: Would you like to hear news about the biggest mover?
+  // TODO: Would you like to hear news about the biggest mover?
 
 }
 
 // Endpoints for Tradier
 var tradier = {
-    endpoint: "sandbox.tradier.com",
-    symbolSearch: "/v1/markets/search?q=",
-    access_token: "qzMwTpKzmDeFez8dn4u2Lr2PM6GC"
+  endpoint: "sandbox.tradier.com",
+  symbolSearch: "/v1/markets/search?q=",
+  access_token: "qzMwTpKzmDeFez8dn4u2Lr2PM6GC"
 }
 
 // Tradier GET options
 var tradier_get = {
-    method: 'GET',
-    hostname: tradier.endpoint,
-    path: tradier.symbolSearch,
-    headers: {
-        'Authorization': 'Bearer ' + tradier.access_token,
-        'Accept' : 'application/json',
-        'Content-Type' : 'application/json'
-    }
+  method: 'GET',
+  hostname: tradier.endpoint,
+  path: tradier.symbolSearch,
+  headers: {
+    'Authorization': 'Bearer ' + tradier.access_token,
+    'Accept' : 'application/json',
+    'Content-Type' : 'application/json'
+  }
 }
 
 // Setup key/secret for authentication and API endpoint URL
@@ -122,63 +122,102 @@ var tradeking_consumer = new oauth.OAuth(
   null,
   "HMAC-SHA1");
 
-var symbol = "";
+  var symbol = "";
 
-// General error message for TradeKing requests
-function getRequestError(error, intent, context){
+  // General error message for TradeKing requests
+  function getRequestError(error, intent, context){
     console.log(error);
     context.succeed(
-    generateResponse(buildSpeechletResponse("My Market was unable to process your request with TradeKing for " + intent + ".", true),{})
+      generateResponse(buildSpeechletResponse("My Market was unable to process your request with TradeKing for " + intent + ".", true),{})
     );
-}
+  }
 
-// Send GET to TradeKing with new symbol
-function tradeking_get_stock(context, body, callback){
-  tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + body,
-  configuration.access_token, configuration.access_secret,
-  function(error, data, response) {
-    if (error){
-      getRequestError(error, " retrieving information about " + body );
-      return callback("ERROR");
-    }
-    else{
-      // Evaluate if data is valid
-      var definedTest = parseFloat(JSON.parse(data).response.quotes.quote.last);
-      if (!definedTest){
-        console.log("NOT DEFINED!");
-        return callback("NOT_DEFINED");
+  // Send GET to TradeKing with new symbol
+  function tradeking_get_stock(context, body, callback){
+    tradeking_consumer.get(configuration.api_url+'/market/ext/quotes.json?symbols=' + body,
+    configuration.access_token, configuration.access_secret,
+    function(error, data, response) {
+      if (error){
+        getRequestError(error, " retrieving information about " + body );
+        return callback("ERROR");
       }
       else{
-        console.log("DEFINED!")
-        // Parse the JSON data
-        dataResponse = JSON.parse(data).response.quotes.quote;
-        context.succeed(
+        var dataResponse = JSON.parse(data).response.quotes.quote;
+        // Evaluate if data is valid
+        var definedTest = parseFloat(dataResponse.last);
+        if (!definedTest){
+          console.log("NOT DEFINED!");
+          return callback(dataResponse, "NOT_DEFINED");
+        }
+        else{
+          console.log("DEFINED!")
+          return callback(dataResponse, "SUCCESS");
+          // Parse the JSON data
+
+          context.succeed(
             generateResponse(buildSpeechletResponse(stockExchange(dataResponse), true),{})
-        );
-        return callback("SUCCESS");
+          );
+        }
+      }
+    });
+  }
+
+  // Send GET to TradeKing with porfolio number
+  function tradeking_get_portfolio(context, account, callback){
+    tradeking_consumer.get(configuration.api_url+'/accounts/' + account + '/holdings.json',
+    configuration.access_token, configuration.access_secret,
+    function(error, data, response) {
+      if (error){
+        getRequestError(error, " retrieving news about your portfolio", context);
+        return callback("ERROR");
+      }
+      else{
+        // Parse the JSON data
+        dataResponse = JSON.parse(data).response.accountholdings;
+        return callback(dataResponse)
       }
     }
-  });
-}
-
-// Send GET to TradeKing with porfolio number
-function tradeking_get_portfolio(context, account, callback){
-  tradeking_consumer.get(configuration.api_url+'/accounts/' + account + '/holdings.json',
-  configuration.access_token, configuration.access_secret,
-      function(error, data, response) {
-          if (error){
-            getRequestError(error, " retrieving news about your portfolio", context);
-            return callback("ERROR");
-          }
-          else{
-              // Parse the JSON data
-              dataResponse = JSON.parse(data).response.accountholdings;
-              return callback(dataResponse)
-          }
-      }
   );
 }
 
+// Send GET to Tradier
+function tradier_get_ticker(symbol, callback){
+  symbol = symbol.split(' ').join('%20');
+  // Send to Tradier
+  tradier_get.path = tradier.symbolSearch + symbol;
+  var body = "";
+  // console.log(tradier_get);
+  // console.log(https.get(tradier_get, (response) => {
+  //                   response.on('data', (chunk) => { body += chunk });
+  //                   response.on('end', () => {})
+  //                 })
+  //               );
+  https.get(tradier_get, (response) => {
+    console.log("BEGIN TRADIER");
+    response.on('data', (chunk) => { body += chunk });
+    response.on('end', () => {
+      console.log("SYMBOL TRY2");
+      // Sets body as first suggested ticker symbol
+      if (JSON.parse(body).securities != null){
+        body = JSON.parse(body).securities.security;
+        console.log(body);
+        if (body instanceof Array)
+        body = body[0].symbol;
+        else
+        body = body.symbol;
+        console.log("TRADIER SUCCESS");
+        return callback(body, "SUCCESS");
+      }
+      else{
+        console.log("TRADIER FAILURE")
+        // Tradier failed to find a match
+        return callback(body, "FAILURE");
+      }
+    });
+  });
+  // console.log("OUTSIDE TRADER GET");
+  // return callback(body, "failure");
+};
 
 
 
@@ -194,182 +233,176 @@ exports.handler = (event, context) => {
     switch (event.request.type) {
 
       case "LaunchRequest":
-        // Launch Request
-        console.log(`LAUNCH REQUEST`);
-        var demoAccount = '38937548';
-        tradeking_get_portfolio(context, demoAccount, function(response){
-          if (response !== "ERROR"){
+      // Launch Request
+      console.log(`LAUNCH REQUEST`);
+      var demoAccount = '38937548';
+      tradeking_get_portfolio(context, demoAccount, function(response){
+        if (response !== "ERROR"){
+          context.succeed(
+            generateResponse(
+              buildSpeechletResponse("Welcome to my market. " + 'portfolioReview(dataResponse)', true),{}
+            )
+          );
+        }
+      });
+      break;
+
+      case "IntentRequest":
+      // Intent Request
+      console.log(`INTENT REQUEST`);
+      console.log(event.request.intent.name);
+      switch(event.request.intent.name) {
+        case "GetStockPrice":
+        symbol = event.request.intent.slots.StockSymbol.value;
+        symbol = symbol.replace(/[^a-zA-Z ]+/g, '');
+        tradeking_get_stock(context, symbol, function(dataResponse, status) {
+          if (status !== "SUCCESS"){
+            console.log("NAME TO SYMBOL: " + symbol);
+
+            tradier_get_ticker(symbol, function(body, result){
+              console.log("BODY: " + body);
+              if (result === "SUCCESS"){
+                tradeking_get_stock(context, body, function(dataResponse, status) {
+                  console.log("STATUS: " + status);
+                  if (status === "SUCCESS"){
+                    //SUCCESSFUL - PRINT OUTPUT
+                    context.succeed(
+                      generateResponse(buildSpeechletResponse(stockExchange(dataResponse), true),{})
+                    );
+                  }
+                });
+              }
+              else{
+                // Tradier failed to find a match
+                console.log("Tradier match not found.")
+                context.succeed(
+                  generateResponse(
+                    buildSpeechletResponse("My Market was unable to find a match for " + symbol.split('%20').join(' ') + ".", true),{}
+                  )
+                );
+              }
+            });
+          }
+          else{
+            //SUCCESSFUL - PRINT OUTPUT
             context.succeed(
-                generateResponse(
-                    buildSpeechletResponse("Welcome to my market. " + 'portfolioReview(dataResponse)', true),{}
-                )
+              generateResponse(buildSpeechletResponse(stockExchange(dataResponse), true),{})
             );
           }
         });
         break;
 
-      case "IntentRequest":
-        // Intent Request
-        console.log(`INTENT REQUEST`);
-        console.log(event.request.intent.name);
-        switch(event.request.intent.name) {
-          case "GetStockPrice":
-                symbol = event.request.intent.slots.StockSymbol.value;
-                symbol = symbol.replace(/[^a-zA-Z ]+/g, '');
-                tradeking_get_stock(context, symbol, function(status) {
-                  if (status === "NOT_DEFINED"){
-                    console.log("NAME TO SYMBOL: " + symbol);
-                    // Replace spaces with %20 for URL
-                    symbol = symbol.split(' ').join('%20');
-                    // Send to Tradier
-                    tradier_get.path = tradier.symbolSearch + symbol;
-                    var body = "";
-                    https.get(tradier_get, (response) => {
-                    response.on('data', (chunk) => { body += chunk });
-                    response.on('end', () => {
-                        console.log("SYMBOL TRY2");
-                        // TODO Fix bug where Tradier doesn't find any matches. 'disney'
-                        // Sets body as first suggested ticker symbol
-                        if (JSON.parse(body).securities != null){
-                          body = JSON.parse(body).securities.security;
-                          console.log(body);
-                          if (body instanceof Array)
-                              body = body[0].symbol;
-                          else
-                              body = body.symbol;
-                          console.log("BODY: " + body)
-                              tradeking_get_stock(context, body, function(status) {
-                                console.log("STATUS: " + status);
-                              });
-                        }
-                        else{
-                          // Tradier failed to find a match
-                          console.log("Tradier failed to find a match.")
-                          context.succeed(
-                              generateResponse(
-                                  buildSpeechletResponse("My Market was unable to find a match for " + symbol.split('%20').join(' ') + ".", true),{}
-                              )
-                          );
-                        }
 
+        case "GetNewsAbout":
+        keyword = event.request.intent.slots.NewsWord.value;
+        keyword = keyword.replace(/[^a-zA-Z ]+/g, '');
+        console.log("get news about function");
+        var endpoint = "https://finance.yahoo.com/rss/headline?s=" + keyword;
+        var body = "";
+        https.get(endpoint, (response) => {
+          response.on('data', (chunk) => { body += chunk });
+          response.on('end', () => {
+            var count = 0;
+            var numRounds = 0;
+            var string = body.split(/\s+/);
+            var resp = '';
 
-                    });
-                    });
-                  }
-                });
-            break;
+            // if (string.length < 55){
+            //   // TODO: enter the code to
+            // }
+            while(numRounds < 2){
+              var title = '';
+              var description = '';
 
+              while(string[count] != '<item>'){
+                count += 1;
+                //console.log(count);
+                //console.log(string[count]);
+              }
+              count +=1;
+              description = description + string[count].substring(13, string[count].length) + ' ';
+              count +=1;
+              while (string[count][string[count].length-1] != '>'){
+                description = description + string[count] + ' ';
+                count += 1;
+              }
+              description += string[count].substring(0,string[count].length - 14);
 
-            case "GetNewsAbout":
-                keyword = event.request.intent.slots.NewsWord.value;
-                keyword = keyword.replace(/[^a-zA-Z ]+/g, '');
-                console.log("get news about function");
-                var endpoint = "https://finance.yahoo.com/rss/headline?s=" + keyword;
-                var body = "";
-                https.get(endpoint, (response) => {
-                    response.on('data', (chunk) => { body += chunk });
-                    response.on('end', () => {
-                    var count = 0;
-                    var numRounds = 0;
-                    var string = body.split(/\s+/);
-                    var resp = '';
+              numLines = 0;
+              while (numLines < 4){
+                if (string[count][string[count].length-1] == '>') {
+                  numLines += 1;
+                }
+                count += 1;
+              }
 
-                    if (string.length < 55){
-                        // TODO: enter the code to 
-                    }
-                    while(numRounds < 2){
-                        var title = '';
-                        var description = '';
+              title = title + string[count].substring(7, string[count].length) + ' ';
+              count += 1;
+              while (string[count][string[count].length-1] != '>'){
+                title = title + string[count] + ' ';
+                count += 1;
+              }
+              title += string[count].substring(0,string[count].length - 8)
 
-                        while(string[count] != '<item>'){
-                            count += 1;
-                            //console.log(count);
-                            //console.log(string[count]);
-                        }
-                        count +=1;
-                        description = description + string[count].substring(13, string[count].length) + ' ';
-                        count +=1;
-                        while (string[count][string[count].length-1] != '>'){
-                            description = description + string[count] + ' ';
-                            count += 1;
-                        }
-                        description += string[count].substring(0,string[count].length - 14);
+              resp = resp + title + ' ' + description + ' ';
+              numRounds += 1;
+            }
 
-                        numLines = 0;
-                        while (numLines < 4){
-                            if (string[count][string[count].length-1] == '>') {
-                                numLines += 1;
-                            }
-                            count += 1;
-                        }
-
-                        title = title + string[count].substring(7, string[count].length) + ' ';
-                        count += 1;
-                        while (string[count][string[count].length-1] != '>'){
-                            title = title + string[count] + ' ';
-                            count += 1;
-                        }
-                        title += string[count].substring(0,string[count].length - 8)
-
-                        resp = resp + title + ' ' + description + ' ';
-                        numRounds += 1;
-                    }
-
-                    context.succeed(
-                       generateResponse(buildSpeechletResponse(resp, true),{})
-                    );
-                });
-                });
-            break;
-
-
-            case "GetNews":
-                console.log("get news function");
-                var endpoint = "https://newsapi.org/v1/articles?source=" +
-                "bloomberg&apiKey=4de8fd1a6b2c47ce8d98fce1185a556e";
-                var body = "";
-                https.get(endpoint, (response) => {
-                response.on('data', (chunk) => { body += chunk });
-                response.on('end', () => {
-                    var dataResponse = JSON.parse(body);
-                    //console.log(dataResponse)
-                    var resp = '';
-                    for (var i = 0 ; i < 3; i++){
-                        resp = resp + dataResponse.articles[i].title + '. ';
-                        resp = resp + dataResponse.articles[i].description + '<break time="2s"/> ';
-                        resp = resp + " Next Article. ";
-                    }
-                    console.log("resp: ");
-                    console.log(resp);
-                    context.succeed(
-                        generateResponse(buildSpeechletResponse(resp, true),{})
-                    );
-                });
-                });
-            break;
-
-            case "GetPortfolio":
-                var demoAccount = '38937548';
-                tradeking_get_portfolio(context, demoAccount, function(response){
-                  if (response !== "ERROR"){
-                    context.succeed(
-                        generateResponse(
-                            buildSpeechletResponse(portfolioReview(response), true),{}
-                        )
-                    );
-                  }
-                });
-            break;
-          default:
-            throw "Invalid intent";
-        }
+            context.succeed(
+              generateResponse(buildSpeechletResponse(resp, true),{})
+            );
+          });
+        });
         break;
+
+
+        case "GetNews":
+        console.log("get news function");
+        var endpoint = "https://newsapi.org/v1/articles?source=" +
+        "bloomberg&apiKey=4de8fd1a6b2c47ce8d98fce1185a556e";
+        var body = "";
+        https.get(endpoint, (response) => {
+          response.on('data', (chunk) => { body += chunk });
+          response.on('end', () => {
+            var dataResponse = JSON.parse(body);
+            //console.log(dataResponse)
+            var resp = '';
+            for (var i = 0 ; i < 3; i++){
+              resp = resp + dataResponse.articles[i].title + '. ';
+              resp = resp + dataResponse.articles[i].description + '<break time="2s"/> ';
+              resp = resp + " Next Article. ";
+            }
+            console.log("resp: ");
+            console.log(resp);
+            context.succeed(
+              generateResponse(buildSpeechletResponse(resp, true),{})
+            );
+          });
+        });
+        break;
+
+        case "GetPortfolio":
+        var demoAccount = '38937548';
+        tradeking_get_portfolio(context, demoAccount, function(response){
+          if (response !== "ERROR"){
+            context.succeed(
+              generateResponse(
+                buildSpeechletResponse(portfolioReview(response), true),{}
+              )
+            );
+          }
+        });
+        break;
+        default:
+        throw "Invalid intent";
+      }
+      break;
       case "SessionEndedRequest":
-        // Session Ended Request
-        console.log(`SESSION ENDED REQUEST`);
-        break;
+      // Session Ended Request
+      console.log(`SESSION ENDED REQUEST`);
+      break;
       default:
-        context.fail(`INVALID REQUEST TYPE: ${event.request.type}`);
+      context.fail(`INVALID REQUEST TYPE: ${event.request.type}`);
     }
   } catch(error) { context.fail(`Exception: ${error}`) }
 };
